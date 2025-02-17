@@ -42,8 +42,8 @@ export async function POST(request: Request) {
       const time = now.toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit',
-        hour12: true,
-        timeZone: 'UTC'  // Remove this line to use local timezone
+        hour12: true
+        // Removed the erroneous 't' property
       });
 
       const note = await prisma.note.create({
@@ -78,6 +78,7 @@ export async function POST(request: Request) {
         hour: 'numeric',
         minute: '2-digit',
         hour12: true
+        // Removed the erroneous 't' property if present
       });
 
       const note = await prisma.note.create({
