@@ -46,22 +46,12 @@ export function Sidebar({ currentView, onViewChange }: SidebarProps) {
   return (
     <div className="flex h-screen w-[240px] flex-col border-r bg-white rounded-r-3xl">
       <div className="p-4">
-        <div className="flex items-center gap-2 pb-4">
-          <div className="rounded-xl bg-purple-600 p-2">
-            <svg
-              className="h-5 w-5 text-white"
-              fill="none"
-              height="24"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              width="24"
-            >
-              <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3" />
-            </svg>
-          </div>
+        <div className="flex items-center gap-2 pb-4 ">
+          <img 
+            src="https://images.saasworthy.com/tars_4723_logo_1587125010_cvg74.png" 
+            alt="TARS Logo" 
+            className="h-12 w-12 rounded-xl"
+          />
           <span className="text-lg font-semibold">AI Notes</span>
         </div>
         <nav className="space-y-1">

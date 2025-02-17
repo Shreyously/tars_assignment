@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Search, SlidersHorizontal } from "lucide-react"
+import { Search, SlidersHorizontal, Calendar, Text, FileType, ArrowUpDown } from "lucide-react"
 import { Sidebar } from "@/components/sidebar"
 import { NoteCard } from "@/components/note-card"
 import { ActionBar } from "@/components/action-bar"
@@ -11,6 +11,7 @@ import type { Note } from "@/types/note"
 import { FavoritesPage } from "@/components/favorites-page"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import { toast } from "react-hot-toast"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 const initialNotes: Note[] = [
   {
@@ -59,6 +60,8 @@ export default function Page() {
   const [notes, setNotes] = React.useState<Note[]>([])
   const [currentView, setCurrentView] = React.useState<"home" | "favorites">("home")
   const [searchQuery, setSearchQuery] = React.useState("")
+  const [sortBy, setSortBy] = React.useState<"date" | "title" | "type">("date")
+  const [sortOrder, setSortOrder] = React.useState<"asc" | "desc">("desc")
 
   // Add useEffect to load notes when component mounts
   React.useEffect(() => {
@@ -166,6 +169,25 @@ export default function Page() {
     setNotes((prevNotes) => prevNotes.map((note) => (note.id === id ? { ...note, transcript } : note)))
   }
 
+  const sortNotes = (notes: Note[]) => {
+    return [...notes].sort((a, b) => {
+      if (sortBy === "date") {
+        const dateA = new Date(`${a.date} ${a.time}`).getTime()
+        const dateB = new Date(`${b.date} ${b.time}`).getTime()
+        return sortOrder === "desc" ? dateB - dateA : dateA - dateB
+      }
+      if (sortBy === "title") {
+        return sortOrder === "desc" 
+          ? b.title.localeCompare(a.title)
+          : a.title.localeCompare(b.title)
+      }
+      // Sort by type
+      return sortOrder === "desc"
+        ? b.type.localeCompare(a.type)
+        : a.type.localeCompare(b.type)
+    })
+  }
+
   return (
     <ProtectedRoute>
       <div className="flex h-screen bg-white">
@@ -182,10 +204,34 @@ export default function Page() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <Button variant="outline" className="rounded-full gap-2">
-                <SlidersHorizontal className="h-4 w-4" />
-                Sort
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <SlidersHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setSortBy("date")}>
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Date {sortBy === "date" && (sortOrder === "desc" ? "↓" : "↑")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortBy("title")}>
+                    <Text className="mr-2 h-4 w-4" />
+                    Title {sortBy === "title" && (sortOrder === "desc" ? "↓" : "↑")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortBy("type")}>
+                    <FileType className="mr-2 h-4 w-4" />
+                    Type {sortBy === "type" && (sortOrder === "desc" ? "↓" : "↑")}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}>
+                    <ArrowUpDown className="mr-2 h-4 w-4" />
+                    {sortOrder === "asc" ? "Descending" : "Ascending"}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </header>
 
             {currentView === "home" ? (
@@ -196,7 +242,7 @@ export default function Page() {
                   </div>
                 ) : (
                   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {visibleNotes.map((note) => (
+                    {sortNotes(visibleNotes).map((note) => (
                       <NoteCard
                         key={note.id}
                         {...note}
