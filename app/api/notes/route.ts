@@ -7,7 +7,7 @@ import { uploadAudioToCloudinary } from "@/lib/cloudinary";
 export async function POST(request: Request) {
   try {
     const session = await auth();
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -34,15 +34,16 @@ export async function POST(request: Request) {
 
       // Format current date and time
       const now = new Date();
-      const date = now.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
+      const date = now.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
       });
-      const time = now.toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
+      const time = now.toLocaleTimeString('en-US', {
+        hour: 'numeric',
         minute: '2-digit',
-        hour12: true 
+        hour12: true,
+        timeZone: 'UTC'  // Remove this line to use local timezone
       });
 
       const note = await prisma.note.create({
@@ -66,17 +67,17 @@ export async function POST(request: Request) {
     } else {
       // Handle text note
       const data = await request.json();
-      
+
       const now = new Date();
-      const date = now.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
+      const date = now.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
       });
-      const time = now.toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
+      const time = now.toLocaleTimeString('en-US', {
+        hour: 'numeric',
         minute: '2-digit',
-        hour12: true 
+        hour12: true
       });
 
       const note = await prisma.note.create({
@@ -107,7 +108,7 @@ export async function POST(request: Request) {
 export async function GET() {
   try {
     const session = await auth();
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -134,7 +135,7 @@ export async function GET() {
 export async function PATCH(request: Request) {
   try {
     const session = await auth();
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -147,7 +148,7 @@ export async function PATCH(request: Request) {
     }
 
     const data = await request.json();
-    
+
     const note = await prisma.note.findUnique({
       where: { id }
     });
