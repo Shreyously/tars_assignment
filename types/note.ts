@@ -5,10 +5,10 @@ export interface Note {
   time: string
   duration?: string
   description: string
-  type: "text" | "audio"
+  contentType: "text" | "audio"
   transcript?: string
   audioUrl?: string
-  transcriptionStatus: "pending" | "completed" | "failed"
+  transcriptionState: "pending" | "completed" | "failed"
   speakers?: {
     id: string
     name: string

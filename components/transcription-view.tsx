@@ -15,21 +15,21 @@ export function TranscriptionView({ note, onReadMore, onAddImage, onRemoveImage 
     <div className="space-y-4">
       <div className="relative">
         <h3 className="text-sm font-medium mb-2">
-          {note.type === "audio" ? "Transcript" : "Description"}
+          {note.contentType === "audio" ? "Transcript" : "Description"}
         </h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          {note.type === "audio" 
+          {note.contentType === "audio" 
             ? note.transcript?.slice(0, 150) 
             : note.description?.slice(0, 150)}
-          {((note.type === "audio" && note.transcript && note.transcript.length > 150) || 
-            (note.type === "text" && note.description && note.description.length > 150)) && "..."}
+          {((note.contentType === "audio" && note.transcript && note.transcript.length > 150) || 
+            (note.contentType === "text" && note.description && note.description.length > 150)) && "..."}
         </p>
         <Button
           variant="ghost"
           size="sm"
           className="absolute right-0 top-0 rounded-full text-xs font-normal"
           onClick={() => {
-            const content = note.type === "audio" ? note.transcript : note.description;
+            const content = note.contentType === "audio" ? note.transcript : note.description;
             content && navigator.clipboard.writeText(content);
           }}
         >

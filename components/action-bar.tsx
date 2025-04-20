@@ -20,80 +20,82 @@ const formatDuration = (seconds: number): string => {
 }
 
 export function ActionBar({ onAddNote }: ActionBarProps) {
-  const [noteContent, setNoteContent] = React.useState("")
+  const [textContent, setTextContent] = React.useState("")
   const [isRecording, setIsRecording] = useState(false)
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
-  const [audioChunks, setAudioChunks] = useState<Blob[]>([])
-  const recognition = useRef<SpeechRecognition | null>(null)
-  const [transcript, setTranscript] = useState("")
-  const [recordingDuration, setRecordingDuration] = useState(0)
-  const recordingTimer = useRef<NodeJS.Timeout | null>(null)
+  const [recorder, setRecorder] = useState<MediaRecorder | null>(null)
+  const [audioSegments, setAudioSegments] = useState<Blob[]>([])
+  const speechRecognizer = useRef<SpeechRecognition | null>(null)
+  const [speechText, setSpeechText] = useState("")
+  const [recordingTime, setRecordingTime] = useState(0)
+  const timer = useRef<NodeJS.Timeout | null>(null)
 
-  const handleTranscription = (event: SpeechRecognitionEvent) => {
-    const finalTranscript = Array.from(event.results)
+  const handleSpeechResult = (event: SpeechRecognitionEvent) => {
+    const text = Array.from(event.results)
       .map(result => result[0].transcript)
       .join(' ')
-    setTranscript(finalTranscript)
+    setSpeechText(text)
   }
 
   React.useEffect(() => {
     if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognition.current = new SpeechRecognition();
+      speechRecognizer.current = new SpeechRecognition();
       
-      if (recognition.current) {
-        recognition.current.continuous = true;
-        recognition.current.interimResults = true;
-        recognition.current.onresult = handleTranscription;
-        recognition.current.start();
+      if (speechRecognizer.current) {
+        speechRecognizer.current.continuous = true;
+        speechRecognizer.current.interimResults = true;
+        speechRecognizer.current.onresult = handleSpeechResult;
+        speechRecognizer.current.start();
       }
     }
   }, []);
 
   useEffect(() => {
     if (isRecording) {
-      recordingTimer.current = setInterval(() => {
-        setRecordingDuration(prev => prev + 1)
+      timer.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1)
       }, 1000)
     } else {
-      if (recordingTimer.current) {
-        clearInterval(recordingTimer.current)
+      if (timer.current) {
+        clearInterval(timer.current)
       }
-      setRecordingDuration(0)
+      setRecordingTime(0)
     }
 
     return () => {
-      if (recordingTimer.current) {
-        clearInterval(recordingTimer.current)
+      if (timer.current) {
+        clearInterval(timer.current)
       }
     }
   }, [isRecording])
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })//accessing the user's microphone
       const recorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm;codecs=opus'
       })
       
-      setAudioChunks([])
+      setAudioSegments([])
       
+      //event listener for when the audio data is available
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          setAudioChunks(currentChunks => [...currentChunks, event.data])
+          setAudioSegments(currentSegments => [...currentSegments, event.data])
         }
       }
 
       recorder.start(200)
-      setMediaRecorder(recorder)
+      setRecorder(recorder)
+      
       
       if (window.webkitSpeechRecognition) {
         const speechRecognition = new window.webkitSpeechRecognition();
         speechRecognition.continuous = true;
         speechRecognition.interimResults = true;
-        speechRecognition.onresult = handleTranscription;
-        speechRecognition.start();
-        recognition.current = speechRecognition;
+        speechRecognition.onresult = handleSpeechResult;//basically the transciption is handled here
+        speechRecognition.start();//starting the speech recognition
+        speechRecognizer.current = speechRecognition;//recognition is a ref to the speech recognition object
       }
       setIsRecording(true)
     } catch (error) {
@@ -103,15 +105,19 @@ export function ActionBar({ onAddNote }: ActionBarProps) {
   }
 
   const stopRecording = async () => {
-    if (mediaRecorder && recognition.current) {
+    if (recorder && speechRecognizer.current) {
       return new Promise<void>((resolve) => {
-        mediaRecorder.onstop = async () => {
+        recorder.onstop = async () => {
           try {
-            if (audioChunks.length === 0) {
+            if (audioSegments.length === 0) {
               throw new Error("No audio data collected")
             }
   
-            const audioBlob = new Blob(audioChunks, { 
+            //a blob is a binary large object that can store audio data
+            //audioSegments is an array of audio data
+            //the audio blob is created from the audio segments
+            //the audio blob is then used to save the audio note
+            const audioBlob = new Blob(audioSegments, { 
               type: 'audio/webm;codecs=opus'
             })
             
@@ -127,18 +133,18 @@ export function ActionBar({ onAddNote }: ActionBarProps) {
               hour12: true 
             });
   
-            const duration = formatDuration(recordingDuration)
+            const duration = formatDuration(recordingTime)
   
-            const words = transcript.trim().split(' ');
+            const words = speechText.trim().split(' ');
             const firstWord = words[0];
             const capitalizedFirstWord = firstWord.charAt(0).toUpperCase() + firstWord.slice(1);
             const title = `${capitalizedFirstWord} Audio`;
   
             const formData = new FormData()
-            formData.append("content", transcript || "Audio recording")
+            formData.append("content", speechText || "Audio recording")
             formData.append("type", "audio")
             formData.append("audio", audioBlob, "recording.webm")
-            formData.append("transcript", transcript)
+            formData.append("transcript", speechText)
             formData.append("title", title)
             formData.append("duration", duration)
   
@@ -154,30 +160,30 @@ export function ActionBar({ onAddNote }: ActionBarProps) {
   
             const noteData = await response.json()
             onAddNote(noteData as Note)
-            setTranscript("")
-            setRecordingDuration(0)
+            setSpeechText("")
+            setRecordingTime(0)
             toast.success("Note saved")
           } catch (error) {
             console.error("Error saving audio note:", error)
             toast.error(error instanceof Error ? error.message : "Failed to save audio note")
           } finally {
             setIsRecording(false)
-            setAudioChunks([])
-            mediaRecorder.stream.getTracks().forEach(track => track.stop())
-            recognition.current?.stop()
+            setAudioSegments([])
+            recorder.stream.getTracks().forEach(track => track.stop())
+            speechRecognizer.current?.stop()
             resolve()
           }
         }
-        mediaRecorder.stop()
+        recorder.stop()
       })
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (noteContent.trim()) {
+    if (textContent.trim()) {
       try {
-        const firstWord = noteContent.trim().split(' ')[0];
+        const firstWord = textContent.trim().split(' ')[0];
         const title = `${firstWord} Note`;
   
         const now = new Date();
@@ -199,9 +205,9 @@ export function ActionBar({ onAddNote }: ActionBarProps) {
           },
           body: JSON.stringify({
             title,
-            description: noteContent,
-            type: "text",
-            transcriptionStatus: "completed",
+            description: textContent,
+            contentType: "text",
+            transcriptionState: "completed",
             isFavorite: false,
             date,
             time,
@@ -216,7 +222,7 @@ export function ActionBar({ onAddNote }: ActionBarProps) {
         const savedNote = await response.json();
         onAddNote(savedNote as Note);
         
-        setNoteContent("");
+        setTextContent("");
         toast.success("Note created successfully");
       } catch (error) {
         console.error('Error creating note:', error);
@@ -239,8 +245,8 @@ export function ActionBar({ onAddNote }: ActionBarProps) {
           type="text"
           placeholder="Type a note..."
           className="flex-1 rounded-full border-none bg-transparent"
-          value={noteContent}
-          onChange={(e) => setNoteContent(e.target.value)}
+          value={textContent}
+          onChange={(e) => setTextContent(e.target.value)}
         />
         <Button type="submit" variant="ghost" size="icon" className="rounded-full">
           <Send className="h-4 w-4" />

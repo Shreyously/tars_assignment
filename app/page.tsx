@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import type { Note } from "@/types/note"
 import { FavoritesPage } from "@/components/favorites-page"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
-import { toast } from "react-hot-toast"
+import { toast } from "sonner"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 const initialNotes: Note[] = [
@@ -21,10 +21,10 @@ const initialNotes: Note[] = [
     time: "5:26 PM",
     duration: "00:09",
     description: "I'm recording an audio to transcribe into text for the assignment of engineering in terms of actors.",
-    type: "audio",
+    contentType: "audio",
     attachments: [{ type: "Image", count: 1 }],
     transcript: "I'm recording an audio to transcribe into text for the assignment of engineering in terms of actors.",
-    transcriptionStatus: "completed",
+    transcriptionState: "completed",
     audioUrl: "/sample-audio.mp3",
     isFavorite: false,
   },
@@ -34,8 +34,8 @@ const initialNotes: Note[] = [
     date: "Jan 30, 2025",
     time: "5:21 PM",
     description: "ssxscscscsc",
-    type: "text",
-    transcriptionStatus: "completed",
+    contentType: "text",
+    transcriptionState: "completed",
     isFavorite: true,
   },
 ]
@@ -183,10 +183,44 @@ export default function Page() {
       }
       // Sort by type
       return sortOrder === "desc"
-        ? b.type.localeCompare(a.type)
-        : a.type.localeCompare(b.type)
+        ? b.contentType.localeCompare(a.contentType)
+        : a.contentType.localeCompare(b.contentType)
     })
   }
+
+  const updateNoteState = async (updatedNote: Note) => {
+    try {
+      // Update the note in the database first
+      const response = await fetch(`/api/notes?id=${updatedNote.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedNote),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update note');
+      }
+
+      // Update local state
+      setNotes((prevNotes) => {
+        const newNotes = prevNotes.map((note) => 
+          note.id === updatedNote.id ? updatedNote : note
+        );
+        
+        // Update localStorage with the new state
+        localStorage.setItem('userNotes', JSON.stringify(newNotes));
+        
+        return newNotes;
+      });
+
+      toast.success('Note updated successfully');
+    } catch (error) {
+      console.error('Error updating note:', error);
+      toast.error('Failed to update note');
+    }
+  };
 
   return (
     <ProtectedRoute>

@@ -4,7 +4,7 @@ import * as React from "react"
 import { ImagePlus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
-import { toast } from "react-hot-toast"
+import { toast } from "sonner"
 
 interface ImageGalleryProps {
   images: string[]
@@ -13,71 +13,83 @@ interface ImageGalleryProps {
   maxImages?: number
 }
 
-export function ImageGallery({ images, onAddImage, onRemoveImage, maxImages = 3 }: ImageGalleryProps) {
+export function ImageGallery({
+  images,
+  onAddImage,
+  onRemoveImage,
+  maxImages = 5,
+}: ImageGalleryProps) {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageAdd = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
     if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file')
+      toast.error('Please upload an image file')
       return
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image size should be less than 5MB')
+    if (images.length >= maxImages) {
+      toast.error(`Maximum ${maxImages} images allowed`)
       return
     }
 
     try {
       await onAddImage(file)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
     } catch (error) {
       toast.error('Failed to upload image')
     }
   }
 
+  const handleRemoveImage = async (index: number) => {
+    try {
+      await onRemoveImage(index)
+    } catch (error) {
+      toast.error('Failed to remove image')
+    }
+  }
+
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-2">
-        {images.map((url, index) => (
-          <div key={url} className="relative aspect-square">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+        {images.map((image, index) => (
+          <div key={index} className="relative aspect-square">
             <Image
-              src={url}
-              alt={`Note image ${index + 1}`}
+              src={image}
+              alt={`Image ${index + 1}`}
               fill
               className="rounded-lg object-cover"
             />
             <Button
               variant="destructive"
               size="icon"
-              className="absolute top-1 right-1 h-6 w-6 rounded-full"
-              onClick={() => onRemoveImage(index)}
+              className="absolute right-2 top-2 h-6 w-6"
+              onClick={() => handleRemoveImage(index)}
             >
-              <X className="h-3 w-3" />
+              <X className="h-4 w-4" />
             </Button>
           </div>
         ))}
         {images.length < maxImages && (
-          <Button
-            variant="outline"
-            className="aspect-square h-24 w-24 rounded-lg border-dashed"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <ImagePlus className="h-4 w-4" />
-          </Button>
+          <div className="flex aspect-square items-center justify-center rounded-lg border border-dashed">
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleImageAdd}
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <ImagePlus className="h-6 w-6" />
+            </Button>
+          </div>
         )}
       </div>
-      <input
-        type="file"
-        accept="image/*"
-        className="hidden"
-        ref={fileInputRef}
-        onChange={handleFileSelect}
-      />
     </div>
   )
 } 

@@ -1,70 +1,63 @@
-import { PrismaAdapter } from "@auth/prisma-adapter"
-import { NextAuthOptions } from "next-auth"
-import { Adapter } from "next-auth/adapters"
+import NextAuth from "next-auth"
+import type { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import bcrypt from "bcrypt"
-import NextAuth from "next-auth/next"
-import { prisma } from "@/lib/prisma"
+import { PrismaAdapter } from "@auth/prisma-adapter"
+import { PrismaClient } from "@prisma/client"
+import bcrypt from "bcryptjs"
+
+const prisma = new PrismaClient()
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as Adapter,
-  callbacks: {
-    jwt: async ({ token, user }) => {
-      if (user) {
-        token.id = user.id
-      }
-      return token
-    },
-    session: async ({ session, token }) => {
-      if (token) {
-        session.user.id = token.id as string
-      }
-      return session
-    }
-  },
+  adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
-      name: "credentials",
+      name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error('Invalid credentials');
+          throw new Error("Please enter your email and password")
         }
 
         const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email
-          }
-        });
+          where: { email: credentials.email }
+        })
 
-        if (!user || !user?.password) {
-          throw new Error('Invalid credentials');
+        if (!user || !user.password) {
+          throw new Error("Invalid email or password")
         }
 
-        const isCorrectPassword = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
+        const isValid = await bcrypt.compare(credentials.password, user.password)
 
-        if (!isCorrectPassword) {
-          throw new Error('Invalid credentials');
+        if (!isValid) {
+          throw new Error("Invalid email or password")
         }
 
-        return user;
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+        }
       }
     })
   ],
-  session: {
-    strategy: "jwt"
-  },
-  secret: process.env.NEXTAUTH_SECRET,
-  debug: process.env.NODE_ENV === "development",
   pages: {
-    signIn: "/login"
-  }
+    signIn: "/auth/signin",
+  },
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  callbacks: {
+    async session({ session, token }) {
+      if (token?.sub && session.user) {
+        session.user.id = token.sub
+      }
+      return session
+    },
+  },
 }
 
 const handler = NextAuth(authOptions)

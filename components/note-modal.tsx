@@ -10,8 +10,10 @@ import { TranscriptionView } from "./transcription-view"
 import { TranscriptEditModal } from "./transcript-edit-modal"
 import type { Note } from "@/types/note"
 import { Input } from "@/components/ui/input"
-import { toast } from "react-hot-toast"
+import { toast } from "sonner"
 import { FileText, PenLine, Plus, Users } from "lucide-react"
+import { NoteTransformer } from "./note-transformer"
+import { VoiceAssistant } from "./voice-assistant"
 
 interface NoteModalProps {
   isOpen: boolean
@@ -38,7 +40,9 @@ export function NoteModal({
   const [progress, setProgress] = React.useState(0)
   const [currentTime, setCurrentTime] = React.useState(0)
   const [isTranscriptEditOpen, setIsTranscriptEditOpen] = React.useState(false)
+  const [currentTone, setCurrentTone] = React.useState<string>("")
   const audioRef = React.useRef<HTMLAudioElement>(null)
+  const transcriptRef = React.useRef<HTMLDivElement>(null)
   const [isEditingTitle, setIsEditingTitle] = React.useState(false)
   const [editedTitle, setEditedTitle] = React.useState(note.title)
   const titleInputRef = React.useRef<HTMLInputElement>(null)
@@ -98,6 +102,54 @@ export function NoteModal({
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`
   }
 
+  const handleNavigation = (command: string) => {
+    if (!transcriptRef.current) return;
+
+    switch (command) {
+      case "beginning":
+        transcriptRef.current.scrollTop = 0;
+        break;
+      case "end":
+        transcriptRef.current.scrollTop = transcriptRef.current.scrollHeight;
+        break;
+      case "scroll_up":
+        transcriptRef.current.scrollTop -= 100;
+        break;
+      case "scroll_down":
+        transcriptRef.current.scrollTop += 100;
+        break;
+      case "next_paragraph":
+        // Implementation for next paragraph navigation
+        break;
+      case "previous_paragraph":
+        // Implementation for previous paragraph navigation
+        break;
+      case "select_all":
+        const range = document.createRange();
+        range.selectNodeContents(transcriptRef.current);
+        const selection = window.getSelection();
+        if (selection) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+        break;
+    }
+  };
+
+  const handleTransform = (transformedContent: string, command: string) => {
+    console.log("Transforming note:", note.id, "with content:", transformedContent);
+    const updatedNote = {
+      ...note,
+      ...(note.contentType === "audio" 
+        ? { transcript: transformedContent }
+        : { description: transformedContent }
+      )
+    };
+    console.log("Updated note:", updatedNote);
+    updateNoteState(updatedNote);
+    setCurrentTone(command);
+  };
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -145,6 +197,7 @@ export function NoteModal({
                 className="rounded-full"
                 onClick={onClose}
               >
+                <X className="h-4 w-4" />
               </Button>
             </div>
             <div className="text-sm text-muted-foreground">
@@ -152,7 +205,7 @@ export function NoteModal({
             </div>
           </DialogHeader>
 
-          {note.type === "audio" && (
+          {note.contentType === "audio" && (
             <div className="border-b p-4">
               <div className="flex items-center gap-4">
                 <Button variant="ghost" size="icon" className="rounded-full" onClick={togglePlayback}>
@@ -194,6 +247,15 @@ export function NoteModal({
                   <FileText className="mr-2 h-4 w-4" />
                   Transcript
                 </TabsTrigger>
+                {note.contentType === "audio" && (
+                  <TabsTrigger 
+                    value="speakers"
+                    className="relative h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-medium text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+                  >
+                    <Users className="mr-2 h-4 w-4" />
+                    Speakers
+                  </TabsTrigger>
+                )}
                 <TabsTrigger 
                   value="notes"
                   className="relative h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-medium text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
@@ -201,42 +263,67 @@ export function NoteModal({
                   <PenLine className="mr-2 h-4 w-4" />
                   Notes
                 </TabsTrigger>
-                <TabsTrigger 
-                  value="create"
-                  className="relative h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-medium text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="speaker"
-                  className="relative h-9 rounded-none border-b-2 border-transparent bg-transparent px-4 pb-3 pt-2 font-medium text-muted-foreground shadow-none transition-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
-                >
-                  <Users className="mr-2 h-4 w-4" />
-                  Speaker Transcript
-                </TabsTrigger>
               </TabsList>
             </div>
 
             <TabsContent value="transcript" className="p-4">
-              <TranscriptionView
-                note={note}
-                onReadMore={() => setIsTranscriptEditOpen(true)}
-                onAddImage={async (file) => onAddImage?.(note.id, file)}
-                onRemoveImage={async (index) => onRemoveImage?.(note.id, index)}
-              />
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Transcript</h3>
+                <div className="flex items-center gap-2">
+                  <VoiceAssistant
+                    content={note.contentType === "audio" ? note.transcript || "" : note.description || ""}
+                    onTransform={handleTransform}
+                    currentTone={currentTone}
+                    onNavigate={handleNavigation}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full"
+                    onClick={() => setIsTranscriptEditOpen(true)}
+                  >
+                    <PenLine className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <div ref={transcriptRef} className="max-h-[60vh] overflow-y-auto">
+                <TranscriptionView
+                  note={note}
+                  onReadMore={() => setIsTranscriptEditOpen(true)}
+                  onAddImage={async (file) => onAddImage?.(note.id, file)}
+                  onRemoveImage={async (index) => onRemoveImage?.(note.id, index)}
+                />
+              </div>
             </TabsContent>
+
+            {note.contentType === "audio" && (
+              <TabsContent value="speakers" className="p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Speakers</h3>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {/* Speaker list will go here */}
+              </TabsContent>
+            )}
 
             <TabsContent value="notes" className="p-4">
-              <div className="text-sm text-muted-foreground">Notes content here...</div>
-            </TabsContent>
-
-            <TabsContent value="create" className="p-4">
-              <div className="text-sm text-muted-foreground">Create content here...</div>
-            </TabsContent>
-
-            <TabsContent value="speaker" className="p-4">
-              <div className="text-sm text-muted-foreground">Speaker transcript content here...</div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Notes</h3>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {/* Notes list will go here */}
             </TabsContent>
           </Tabs>
         </DialogContent>
@@ -245,10 +332,10 @@ export function NoteModal({
       <TranscriptEditModal
         isOpen={isTranscriptEditOpen}
         onClose={() => setIsTranscriptEditOpen(false)}
-        transcript={note.type === "audio" ? note.transcript || "" : note.description || ""}
+        transcript={note.contentType === "audio" ? note.transcript || "" : note.description || ""}
         note={note}
         onSave={(transcript) => {
-          if (note.type === "audio") {
+          if (note.contentType === "audio") {
             onUpdateTranscript(note.id, transcript)
           } else {
             updateNoteState({ ...note, description: transcript })

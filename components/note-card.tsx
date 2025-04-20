@@ -7,7 +7,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { NoteModal } from "./note-modal"
 import type { Note } from "@/types/note"
-import { toast } from "react-hot-toast"
+import { toast } from "sonner"
 import { handleAddImage, handleRemoveImage } from "@/lib/image-handlers"
 
 interface NoteCardProps extends Note {
@@ -24,7 +24,7 @@ export function NoteCard({
   date,
   time,
   description,
-  type,
+  contentType,
   transcript,
   audioUrl,
   attachments,
@@ -60,7 +60,7 @@ export function NoteCard({
 
   const handleCopyContent = (e: React.MouseEvent) => {
     e.stopPropagation() // Prevent modal from opening
-    const content = type === "audio" ? transcript : description
+    const content = contentType === "audio" ? transcript : description
     navigator.clipboard.writeText(content || "")
     toast.success("Content copied to clipboard")
   }
@@ -74,7 +74,7 @@ export function NoteCard({
         <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
           <span className="text-gray-500">{date} · {time}</span>
           <div className="flex items-center gap-1">
-            {type === "audio" ? (
+            {contentType === "audio" ? (
               <>
                 <Play className="h-4 w-4" />
                 <span>{duration}</span>
@@ -94,7 +94,7 @@ export function NoteCard({
       </div>
       <CardContent>
         <p className="text-sm text-gray-600">
-          {type === "audio" && transcript
+          {contentType === "audio" && transcript
             ? transcript.length > 100
               ? `${transcript.slice(0, 100)}...`
               : transcript
@@ -149,13 +149,13 @@ export function NoteCard({
           date,
           time,
           description,
-          type,
+          contentType,
           transcript,
           audioUrl,
           attachments,
           isFavorite,
           duration,
-          transcriptionStatus: "completed",
+          transcriptionState: "completed",
           images: images || [],
         }}
         onToggleFavorite={onToggleFavorite}

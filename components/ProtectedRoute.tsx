@@ -3,7 +3,6 @@
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
-import { toast } from "sonner"
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -17,13 +16,21 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     if (status === "loading") return
 
     if (!session) {
-      router.push("/login")
+      router.push("/auth/signin")
     }
   }, [session, status, router])
 
   if (status === "loading") {
-    return <div>Loading...</div>
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    )
   }
 
-  return session ? <>{children}</> : null
+  if (!session) {
+    return null
+  }
+
+  return <>{children}</>
 } 
