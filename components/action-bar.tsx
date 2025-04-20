@@ -160,7 +160,18 @@ export function ActionBar({ onAddNote }: ActionBarProps) {
             }
   
             const noteData = await response.json()
-            onAddNote(noteData as Note)
+            onAddNote({
+              ...noteData,
+              contentType: "audio",
+              audioUrl: noteData.audioUrl || URL.createObjectURL(audioBlob),
+              transcriptionState: "completed",
+              isFavorite: false,
+              date,
+              time,
+              duration,
+              transcript: speechText,
+              description: speechText,
+            } as Note)
             setSpeechText("")
             setRecordingTime(0)
             toast.success("Note saved")

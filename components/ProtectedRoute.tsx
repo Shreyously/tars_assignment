@@ -16,7 +16,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     if (status === "loading") return
 
     if (!session) {
-      router.push("/auth/signin")
+      router.push("/login")
     }
   }, [session, status, router])
 

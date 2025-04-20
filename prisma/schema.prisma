@@ -15,7 +15,7 @@ enum NoteType {
 model Account {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
   userId            String  @db.ObjectId
-  type              NoteType
+  type              String
   provider          String
   providerAccountId String
   refresh_token     String? @db.String

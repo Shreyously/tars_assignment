@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { X, Star, Play, Download } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogClose } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Slider } from "@/components/ui/slider"
@@ -14,6 +14,13 @@ import { toast } from "sonner"
 import { FileText, PenLine, Plus, Users } from "lucide-react"
 import { NoteTransformer } from "./note-transformer"
 import { VoiceAssistant } from "./voice-assistant"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface NoteModalProps {
   isOpen: boolean
@@ -152,9 +159,9 @@ export function NoteModal({
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-        <DialogContent className="max-w-2xl rounded-2xl p-0">
-          <DialogHeader className="border-b p-4">
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-2xl rounded-2xl p-0 max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="border-b p-4 sticky top-0 bg-background z-10">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 {isEditingTitle ? (
@@ -190,26 +197,35 @@ export function NoteModal({
                   <Star className={note.isFavorite ? "fill-yellow-400 text-yellow-400" : ""} />
                 </Button>
               </div>
-              {/* Single Close Button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full"
-                onClick={onClose}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              <DialogClose asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => {
+                    onClose();
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </DialogClose>
             </div>
             <div className="text-sm text-muted-foreground">
               {note.date} • {note.time}
             </div>
           </DialogHeader>
 
-          {note.contentType === "audio" && (
-            <div className="border-b p-4">
+          {note.contentType === "audio" && note.audioUrl && (
+            <div className="border-b p-4 bg-muted/5">
               <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" className="rounded-full" onClick={togglePlayback}>
-                  <Play className={isPlaying ? "text-purple-600" : ""} />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="rounded-full h-10 w-10 hover:bg-primary/10 hover:text-primary" 
+                  onClick={togglePlayback}
+                >
+                  <Play className={`h-5 w-5 ${isPlaying ? "text-primary" : ""}`} />
                 </Button>
                 <div className="flex-1">
                   <Slider
@@ -217,13 +233,33 @@ export function NoteModal({
                     max={100}
                     step={1}
                     className="[&_[role=slider]]:h-4 [&_[role=slider]]:w-4"
+                    onValueChange={(value) => {
+                      if (audioRef.current) {
+                        const time = (value[0] / 100) * audioRef.current.duration;
+                        audioRef.current.currentTime = time;
+                      }
+                    }}
                   />
                 </div>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span className="font-bold">
+                  <span className="font-mono tabular-nums">
                     {formatTime(currentTime)} / {note.duration}
                   </span>
-                  <Button variant="ghost" size="icon" className="rounded-full">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="rounded-full h-8 w-8 hover:bg-primary/10 hover:text-primary"
+                    onClick={() => {
+                      if (audioRef.current?.src) {
+                        const a = document.createElement('a');
+                        a.href = audioRef.current.src;
+                        a.download = `${note.title}.mp3`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                      }
+                    }}
+                  >
                     <Download className="h-4 w-4" />
                   </Button>
                 </div>
@@ -233,6 +269,7 @@ export function NoteModal({
                 onTimeUpdate={handleTimeUpdate}
                 onEnded={() => setIsPlaying(false)}
                 src={note.audioUrl}
+                className="hidden"
               />
             </div>
           )}
@@ -294,6 +331,75 @@ export function NoteModal({
                   onRemoveImage={async (index) => onRemoveImage?.(note.id, index)}
                 />
               </div>
+              {currentTone && (
+                <div className="mt-4 space-y-4">
+                  <div className="grid gap-4">
+                    <div className="p-4 border rounded-lg bg-muted/5">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-sm font-medium text-muted-foreground">
+                          Original Format
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 text-xs hover:bg-primary/10 hover:text-primary"
+                          onClick={() => {
+                            if (note.contentType === "audio") {
+                              onUpdateTranscript(note.id, note.transcript || "")
+                            } else {
+                              updateNoteState({ ...note, description: note.description || "" })
+                            }
+                          }}
+                        >
+                          Use This
+                        </Button>
+                      </div>
+                      <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ 
+                        __html: (note.contentType === "audio" ? note.transcript : note.description)
+                          ?.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                          .replace(/\*(.*?)\*/g, '<em>$1</em>') || ""
+                      }} />
+                    </div>
+
+                    <div className="p-4 border rounded-lg bg-muted/5">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-sm font-medium text-muted-foreground">
+                          Alternative Format
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 text-xs hover:bg-primary/10 hover:text-primary"
+                          onClick={() => {
+                            const alternativeContent = note.contentType === "audio"
+                              ? note.transcript?.replace(/\*\*really\*\*/g, '*really*')
+                                  .replace(/\*\*recent and important\*\*/g, '*recent and important*')
+                                  .replace(/\*\*definitely\*\*/g, '*definitely*')
+                                  .replace(/\*\*It's been too long\*\*/g, '*It\'s been too long*') || ""
+                              : note.description?.replace(/\*\*really\*\*/g, '*really*')
+                                  .replace(/\*\*recent and important\*\*/g, '*recent and important*')
+                                  .replace(/\*\*definitely\*\*/g, '*definitely*')
+                                  .replace(/\*\*It's been too long\*\*/g, '*It\'s been too long*') || "";
+                            
+                            if (note.contentType === "audio") {
+                              onUpdateTranscript(note.id, alternativeContent)
+                            } else {
+                              updateNoteState({ ...note, description: alternativeContent })
+                            }
+                          }}
+                        >
+                          Use This
+                        </Button>
+                      </div>
+                      <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ 
+                        __html: (note.contentType === "audio" ? note.transcript : note.description)
+                          ?.replace(/\*\*(.*?)\*\*/g, '<em>$1</em>')
+                          .replace(/\*(.*?)\*/g, '<em>$1</em>') || ""
+                      }} />
+                    </div>
+                  </div>
+                </div>
+              )}
             </TabsContent>
 
             {note.contentType === "audio" && (

@@ -93,7 +93,9 @@ export function NoteCard({
   const handleCopyContent = (e: React.MouseEvent) => {
     e.stopPropagation()
     const content = contentType === "audio" ? transcript : description
-    navigator.clipboard.writeText(content || "")
+    const formattedContent = content?.replace(/\*\*(.*?)\*\*/g, '$1')
+                                   .replace(/\*(.*?)\*/g, '$1') || ""
+    navigator.clipboard.writeText(formattedContent)
     toast.success("Content copied to clipboard")
   }
 
@@ -131,7 +133,7 @@ export function NoteCard({
 
   return (
     <Card 
-      className="group relative overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-200 bg-card/50 backdrop-blur-sm border-muted/20"
+      className="group relative overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-200 bg-card/50 backdrop-blur-sm border-muted/20 flex flex-col min-h-[200px]"
       onClick={() => setIsModalOpen(true)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -171,25 +173,34 @@ export function NoteCard({
           <h3 className="font-semibold text-lg tracking-tight line-clamp-1">
             {title}
           </h3>
-          <p className="text-sm text-muted-foreground/90 line-clamp-2">
-            {contentType === "audio" && transcript
+          <p className="text-sm text-muted-foreground/90 line-clamp-2" dangerouslySetInnerHTML={{ 
+            __html: (contentType === "audio" && transcript
               ? transcript
-              : description}
-          </p>
+              : description)
+              ?.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+              .replace(/\*(.*?)\*/g, '<em>$1</em>') || ""
+          }} />
         </div>
+        {contentType === "audio" && audioUrl && (
+          <div className="mt-4">
+            <AudioPlayer
+              audioUrl={audioUrl}
+              duration={duration}
+              onPlaybackChange={setIsPlaying}
+            />
+          </div>
+        )}
       </div>
       
-      {attachments && attachments.length > 0 && (
-        <div className="px-5 pb-3">
+      <div className="space-y-3 px-5">
+        {attachments && attachments.length > 0 && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground/80 bg-muted/50 rounded-full px-3 py-1.5 w-fit">
             <Play className="h-3.5 w-3.5" />
             <span>{attachments[0].count} {attachments[0].type}</span>
           </div>
-        </div>
-      )}
+        )}
 
-      {tags.length > 0 && (
-        <div className="px-5 pb-3">
+        {tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {tags.map((tag, index) => (
               <div
@@ -210,40 +221,42 @@ export function NoteCard({
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      <CardFooter className="justify-end gap-2 p-3 bg-muted/5 border-t border-muted/10">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full h-8 w-8 hover:bg-background/80"
-          onClick={(e) => {
-            e.stopPropagation()
-            handleCopyContent(e)
-          }}
-        >
-          <Copy className="h-4 w-4" />
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-background/80">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem 
-              onClick={(e) => {
-                e.stopPropagation()
-                onDelete(id)
-              }}
-              className="text-destructive focus:text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" /> Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </CardFooter>
+      <div className="mt-auto border-t border-muted/10">
+        <div className="flex items-center justify-end gap-2 px-5 py-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full h-8 w-8 hover:bg-background/80"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleCopyContent(e)
+            }}
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-background/80">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem 
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDelete(id)
+                }}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
 
       <NoteModal
         isOpen={isModalOpen}

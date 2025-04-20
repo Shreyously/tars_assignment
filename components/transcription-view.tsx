@@ -17,20 +17,27 @@ export function TranscriptionView({ note, onReadMore, onAddImage, onRemoveImage 
         <h3 className="text-sm font-medium mb-2">
           {note.contentType === "audio" ? "Transcript" : "Description"}
         </h3>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {note.contentType === "audio" 
+        <p className="text-sm text-muted-foreground leading-relaxed" dangerouslySetInnerHTML={{ 
+          __html: (note.contentType === "audio" 
             ? note.transcript?.slice(0, 150) 
-            : note.description?.slice(0, 150)}
-          {((note.contentType === "audio" && note.transcript && note.transcript.length > 150) || 
-            (note.contentType === "text" && note.description && note.description.length > 150)) && "..."}
-        </p>
+            : note.description?.slice(0, 150))
+            ?.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>') || ""
+        }} />
+        {((note.contentType === "audio" && note.transcript && note.transcript.length > 150) || 
+          (note.contentType === "text" && note.description && note.description.length > 150)) && 
+          <span className="text-sm text-muted-foreground">...</span>
+        }
         <Button
           variant="ghost"
           size="sm"
           className="absolute right-0 top-0 rounded-full text-xs font-normal"
           onClick={() => {
             const content = note.contentType === "audio" ? note.transcript : note.description;
-            content && navigator.clipboard.writeText(content);
+            // Remove markdown symbols before copying
+            const formattedContent = content?.replace(/\*\*(.*?)\*\*/g, '$1')
+                                          .replace(/\*(.*?)\*/g, '$1') || "";
+            formattedContent && navigator.clipboard.writeText(formattedContent);
           }}
         >
           Copy
