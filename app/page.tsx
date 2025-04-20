@@ -227,20 +227,20 @@ export default function Page() {
       <div className="flex min-h-screen bg-gradient-to-br from-background via-purple-950/20 to-background/80">
         <Sidebar currentView={currentView} onViewChange={setCurrentView} />
         <div className="flex-1 flex flex-col min-h-screen">
-          <header className="flex items-center h-14 px-4 border-b bg-background/40 backdrop-blur-sm">
-            <div className="flex flex-1 items-center space-x-4">
+          <header className="sticky top-0 z-40 flex items-center h-16 px-4 sm:px-6 border-b bg-background/40 backdrop-blur-sm">
+            <div className="flex flex-1 items-center gap-3 max-w-[1600px] mx-auto w-full">
               <div className="relative flex-1 max-w-2xl">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 <Input
                   placeholder="Search notes..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 w-full bg-background/20 focus-visible:ring-1 rounded-lg border-none"
+                  className="pl-10 w-full bg-background/20 focus-visible:ring-1 rounded-lg border-none h-10"
                 />
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="shrink-0 rounded-lg bg-background/20">
+                  <Button variant="outline" size="icon" className="shrink-0 rounded-lg bg-background/20 h-10 w-10 hover:bg-background/30">
                     <SlidersHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -269,8 +269,8 @@ export default function Page() {
             </div>
           </header>
 
-          <main className="flex-1 overflow-auto p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <main className="flex-1 overflow-auto px-4 sm:px-6 py-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 max-w-[1600px] mx-auto">
               {sortNotes(visibleNotes).map((note) => (
                 <NoteCard
                   key={note.id}
@@ -279,15 +279,23 @@ export default function Page() {
                   onToggleFavorite={toggleFavorite}
                   onUpdateTranscript={updateTranscript}
                   setNotes={setNotes}
+                  tags={note.tags || []}
+                  handleRemoveTag={(tag: string) => {
+                    const updatedNote = {
+                      ...note,
+                      tags: note.tags?.filter((t: string) => t !== tag) || []
+                    };
+                    updateNoteState(updatedNote);
+                  }}
                 />
               ))}
               {visibleNotes.length === 0 && (
-                <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+                <div className="col-span-full flex flex-col items-center justify-center py-12 sm:py-16 text-center">
                   <div className="rounded-full bg-background/20 p-4 mb-4 ring-1 ring-border/50">
                     <Search className="h-6 w-6 text-muted-foreground" />
                   </div>
-                  <h3 className="font-semibold mb-1">No notes found</h3>
-                  <p className="text-sm text-muted-foreground">
+                  <h3 className="font-semibold mb-2">No notes found</h3>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto px-4">
                     {searchQuery
                       ? "Try adjusting your search query"
                       : currentView === "favorites"

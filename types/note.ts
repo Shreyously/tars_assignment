@@ -22,5 +22,6 @@ export interface Note {
   isFavorite: boolean
   images?: string[] // Array of image URLs
   attachments?: Array<{ type: string; count: number }>
+  tags?: string[]
 }
 

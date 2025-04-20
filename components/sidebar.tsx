@@ -1,12 +1,19 @@
 "use client"
 
-import { Home, Star, LogOut, Menu, Orbit } from "lucide-react"
+import * as React from "react"
+import { Home, Star, LogOut, Menu, Orbit, Sun, Moon, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { signOut, useSession } from "next-auth/react"
 import { toast } from "sonner"
-import type React from "react"
+import { useTheme } from "next-themes"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useState } from "react"
 
 interface NavItemProps {
@@ -39,6 +46,7 @@ interface SidebarProps {
 export function Sidebar({ currentView, onViewChange }: SidebarProps) {
   const { data: session } = useSession()
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const { theme, setTheme } = useTheme()
 
   const handleLogout = async () => {
     try {
@@ -115,25 +123,44 @@ export function Sidebar({ currentView, onViewChange }: SidebarProps) {
       </div>
 
       <div className="p-3 border-t border-border/50">
-        <div className="flex flex-col gap-1">
-          <Button 
-            variant="ghost" 
-            className={cn(
-              "justify-start gap-3 rounded-lg px-3 py-2 hover:bg-background/40 transition-all duration-300",
-              isCollapsed && "justify-center px-0"
-            )}
-          >
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 px-3 py-2">
             <Avatar className="h-6 w-6 shrink-0">
               <AvatarImage src={session?.user?.image || undefined} />
               <AvatarFallback>{session?.user?.name?.charAt(0)}</AvatarFallback>
             </Avatar>
             <span className={cn(
-              "transition-all duration-500 ease-in-out",
+              "flex-1 text-sm transition-all duration-500 ease-in-out",
               isCollapsed ? "opacity-0 w-0" : "opacity-100 w-auto"
             )}>
               {session?.user?.name}
             </span>
-          </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg hover:bg-background/40 transition-all duration-300"
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => setTheme("light")}>
+                  <Sun className="mr-2 h-4 w-4" />
+                  Light
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("dark")}>
+                  <Moon className="mr-2 h-4 w-4" />
+                  Dark
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("system")}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  System
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           <Button
             variant="ghost"
             className={cn(
