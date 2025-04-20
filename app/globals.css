@@ -4,48 +4,48 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 220 25% 97%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
+    --primary: 252 100% 69%;
     --primary-foreground: 0 0% 98%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
+    --accent: 252 100% 69%;
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
-    --radius: 0.5rem;
+    --ring: 252 100% 69%;
+    --radius: 1rem;
   }
  
   .dark {
-    --background: 240 10% 3.9%;
+    --background: 240 10% 4.9%;
     --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
+    --card: 240 10% 7.9%;
     --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
+    --popover: 240 10% 7.9%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
+    --primary: 252 100% 69%;
     --primary-foreground: 240 5.9% 10%;
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 0 0% 98%;
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
+    --accent: 252 100% 69%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    --ring: 252 100% 69%;
   }
 }
  
@@ -60,27 +60,26 @@
 
 /* Modern Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(var(--secondary));
-  border-radius: var(--radius);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground));
-  border-radius: var(--radius);
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 100vh;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--accent-foreground));
+  background: hsl(var(--muted-foreground) / 0.5);
 }
 
 /* Modern Focus Styles */
 :focus-visible {
-  @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  @apply outline-none ring-2 ring-ring/30 ring-offset-2 ring-offset-background;
 }
 
 @layer utilities {
@@ -93,21 +92,26 @@
 
   /* Modern Card Hover Effects */
   .hover-card {
-    @apply transform transition-transform duration-300 ease-in-out hover:shadow-lg hover:-translate-y-1;
+    @apply transform transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-1 hover:bg-accent/5;
   }
 
   /* Modern Button Styles */
   .button-modern {
-    @apply rounded-full transform transition-transform duration-200 ease-in-out hover:scale-105 active:scale-95;
+    @apply rounded-full bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 transform transition-all duration-200 ease-out hover:scale-105 hover:bg-primary hover:shadow-xl hover:shadow-primary/30 active:scale-95;
   }
 
   /* Glass Effect */
   .glass {
-    @apply bg-background/80 backdrop-blur-sm border border-border/50;
+    @apply bg-background/70 backdrop-blur-lg border border-border/30 shadow-lg shadow-black/5;
   }
 
   /* Text Balance */
   .text-balance {
     text-wrap: balance;
+  }
+  
+  /* Card Grid */
+  .card-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4;
   }
 }

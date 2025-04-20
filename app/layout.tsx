@@ -21,10 +21,11 @@ export default function RootLayout({
       <head>
         <title>Modern Notes App</title>
         <meta name="description" content="A modern note-taking application" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
       </head>
       <body
         className={cn(
-          "min-h-screen bg-background font-sans antialiased",
+          "min-h-screen bg-background font-sans antialiased selection:bg-primary/20",
           fontSans.variable,
           GeistSans.variable,
           GeistMono.variable
@@ -32,9 +33,10 @@ export default function RootLayout({
       >
         <Providers>
           <div className="relative flex min-h-screen flex-col">
+            <div className="absolute inset-0 -z-10 h-full w-full bg-white [background:radial-gradient(125%_125%_at_50%_10%,#fff_40%,#9333ea_100%)] dark:[background:radial-gradient(125%_125%_at_50%_10%,#000_40%,#9333ea_100%)]" />
             <div className="flex-1 flex">
               <main className="flex-1">
-                <div className="container relative">
+                <div className="container w-full ">
                   {children}
                 </div>
               </main>

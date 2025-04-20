@@ -37,6 +37,7 @@ export function NoteCard({
   setNotes,
 }: NoteCardProps) {
   const [isModalOpen, setIsModalOpen] = React.useState(false)
+  const [isHovered, setIsHovered] = React.useState(false)
 
   const handleImageAdd = async (id: string, file: File) => {
     return handleAddImage(id, file, (updatedNote) => {
@@ -59,7 +60,7 @@ export function NoteCard({
   };
 
   const handleCopyContent = (e: React.MouseEvent) => {
-    e.stopPropagation() // Prevent modal from opening
+    e.stopPropagation()
     const content = contentType === "audio" ? transcript : description
     navigator.clipboard.writeText(content || "")
     toast.success("Content copied to clipboard")
@@ -67,79 +68,89 @@ export function NoteCard({
 
   return (
     <Card 
-      className="relative overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+      className="group relative overflow-hidden cursor-pointer hover-card bg-card/50 backdrop-blur-sm"
       onClick={() => setIsModalOpen(true)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="p-6">
-        <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
-          <span className="text-gray-500">{date} · {time}</span>
-          <div className="flex items-center gap-1">
-            {contentType === "audio" ? (
-              <>
-                <Play className="h-4 w-4" />
-                <span>{duration}</span>
-              </>
-            ) : (
-              <div className="bg-gray-200 rounded px-2 py-0.5">
-                <Text className="h-4 w-4" />
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="flex justify-between items-start">
-          <h3 className="font-semibold leading-none">
-            {title}
-          </h3>
-        </div>
-      </div>
-      <CardContent>
-        <p className="text-sm text-gray-600">
-          {contentType === "audio" && transcript
-            ? transcript.length > 100
-              ? `${transcript.slice(0, 100)}...`
-              : transcript
-            : description.length > 100
-              ? `${description.slice(0, 100)}...`
-              : description}
-        </p>
-        {attachments && attachments.length > 0 && (
-          <div className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
-            <Play className="h-4 w-4" />
-            <span>{attachments[0].count} {attachments[0].type}</span>
-          </div>
-        )}
-      </CardContent>
-      <CardFooter className="justify-end gap-2">
+      <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
         <Button
           variant="ghost"
           size="icon"
-          className="rounded-full h-8 w-8"
+          className="h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm shadow-sm"
+          onClick={(e) => {
+            e.stopPropagation()
+            onToggleFavorite(id)
+          }}
+        >
+          <Star className={`h-4 w-4 ${isFavorite ? "fill-yellow-400 text-yellow-400" : ""}`} />
+        </Button>
+      </div>
+      
+      <div className="p-6">
+        <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
+          <span className="text-muted-foreground/80 font-medium">{date} · {time}</span>
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary">
+            {contentType === "audio" ? (
+              <>
+                <Play className="h-4 w-4" />
+                <span className="font-medium">{duration}</span>
+              </>
+            ) : (
+              <Text className="h-4 w-4" />
+            )}
+          </div>
+        </div>
+        <div className="space-y-3">
+          <h3 className="font-semibold text-lg tracking-tight">
+            {title}
+          </h3>
+          <p className="text-sm text-muted-foreground line-clamp-2">
+            {contentType === "audio" && transcript
+              ? transcript
+              : description}
+          </p>
+        </div>
+      </div>
+      
+      {attachments && attachments.length > 0 && (
+        <div className="px-6 pb-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground/80 bg-muted/50 rounded-full px-4 py-1.5 w-fit">
+            <Play className="h-4 w-4" />
+            <span>{attachments[0].count} {attachments[0].type}</span>
+          </div>
+        </div>
+      )}
+
+      <CardFooter className="justify-end gap-2 p-4 bg-muted/5">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="rounded-full h-8 w-8 hover:bg-background"
           onClick={handleCopyContent}
         >
           <Copy className="h-4 w-4" />
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">
+            <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-background">
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={(e) => {
-              e.stopPropagation()
-              onDelete(id)
-            }}>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem 
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete(id)
+              }}
+              className="text-destructive focus:text-destructive"
+            >
               <Trash2 className="mr-2 h-4 w-4" /> Delete
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => {
-              e.stopPropagation()
-              onToggleFavorite(id)
-            }}>
-              <Star className="mr-2 h-4 w-4" /> {isFavorite ? "Remove from favorites" : "Add to favorites"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </CardFooter>
+
       <NoteModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

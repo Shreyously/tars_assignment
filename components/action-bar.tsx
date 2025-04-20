@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { PenLine, Image, Mic, Send, X } from "lucide-react"
+import { PenLine, Image, Mic, Send, X, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
@@ -28,6 +28,7 @@ export function ActionBar({ onAddNote }: ActionBarProps) {
   const [speechText, setSpeechText] = useState("")
   const [recordingTime, setRecordingTime] = useState(0)
   const timer = useRef<NodeJS.Timeout | null>(null)
+  const [isExpanded, setIsExpanded] = useState(false)
 
   const handleSpeechResult = (event: SpeechRecognitionEvent) => {
     const text = Array.from(event.results)
@@ -233,46 +234,120 @@ export function ActionBar({ onAddNote }: ActionBarProps) {
   
 
   return (
-    <div className="fixed bottom-6 left-1/2 flex w-[90%] max-w-[640px] -translate-x-1/2 items-center justify-between rounded-full border bg-white p-2 shadow-lg">
-      <form onSubmit={handleSubmit} className="flex w-full items-center gap-2">
-        <Button type="button" variant="ghost" size="icon" className="rounded-full">
-          <PenLine className="h-4 w-4" />
-        </Button>
-        <Button type="button" variant="ghost" size="icon" className="rounded-full">
-          <Image className="h-4 w-4" />
-        </Button>
-        <Input
-          type="text"
-          placeholder="Type a note..."
-          className="flex-1 rounded-full border-none bg-transparent"
-          value={textContent}
-          onChange={(e) => setTextContent(e.target.value)}
-        />
-        <Button type="submit" variant="ghost" size="icon" className="rounded-full">
-          <Send className="h-4 w-4" />
-        </Button>
-      </form>
-      <Button
-        onClick={isRecording ? stopRecording : startRecording}
-        className={cn(
-          "ml-2 rounded-full px-6 text-white",
-          isRecording 
-            ? "bg-red-500 hover:bg-red-600" 
-            : "bg-purple-500 hover:bg-purple-600"
-        )}
-      >
-        {isRecording ? (
-          <>
-            <X className="mr-2 h-4 w-4" />
-            Stop recording
-          </>
-        ) : (
-          <>
-            <Mic className="mr-2 h-4 w-4" />
-            Start recording
-          </>
-        )}
-      </Button>
+    <div className="sticky bottom-0 z-50 w-full pb-safe">
+      <div className="mx-auto max-w-3xl px-4 py-3">
+        <div className={cn(
+          "relative rounded-2xl border bg-card/50 backdrop-blur-xl shadow-lg transition-all duration-300",
+          isExpanded ? "p-4" : "p-2"
+        )}>
+          {isExpanded ? (
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="shrink-0 rounded-xl hover:bg-primary/10 hover:text-primary"
+                  onClick={() => setIsExpanded(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+                <div className="relative flex-1">
+                  <Input
+                    placeholder="Type your note..."
+                    value={textContent}
+                    onChange={(e) => setTextContent(e.target.value)}
+                    className="rounded-xl border-0 bg-muted/50 focus-visible:ring-0 pr-12"
+                  />
+                  <Button
+                    type="submit"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 rounded-lg"
+                    disabled={!textContent.trim()}
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between border-t pt-3">
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-xl hover:bg-primary/10 hover:text-primary"
+                  >
+                    <Image className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={isRecording ? "destructive" : "ghost"}
+                    size="icon"
+                    className={cn(
+                      "h-8 w-8 rounded-xl",
+                      !isRecording && "hover:bg-primary/10 hover:text-primary"
+                    )}
+                    onClick={isRecording ? stopRecording : startRecording}
+                  >
+                    {isRecording ? (
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-current animate-pulse" />
+                        <span className="text-xs font-medium ml-1">{formatDuration(recordingTime)}</span>
+                      </div>
+                    ) : (
+                      <Mic className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                {speechText && (
+                  <p className="text-sm text-muted-foreground line-clamp-1 px-2 py-1 bg-muted/50 rounded-lg">
+                    {speechText}
+                  </p>
+                )}
+              </div>
+            </form>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                className="flex-1 justify-start gap-2 rounded-xl hover:bg-primary/10 hover:text-primary h-10"
+                onClick={() => setIsExpanded(true)}
+              >
+                <PenLine className="h-4 w-4 shrink-0" />
+                <span className="text-muted-foreground">Add a note...</span>
+              </Button>
+              <Button
+                type="button"
+                variant={isRecording ? "destructive" : "ghost"}
+                size="icon"
+                className={cn(
+                  "h-10 w-10 shrink-0 rounded-xl",
+                  !isRecording && "hover:bg-primary/10 hover:text-primary"
+                )}
+                onClick={isRecording ? stopRecording : startRecording}
+              >
+                <div className="relative flex items-center justify-center">
+                  {isRecording ? (
+                    <>
+                      <div className="absolute -inset-3 rounded-xl bg-red-500/10 animate-pulse" />
+                      <div className="absolute -inset-6 rounded-xl bg-red-500/5" />
+                      <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                      <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                        <span className="text-xs font-medium text-red-500 tracking-wider">
+                          {formatDuration(recordingTime)}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <Mic className="h-4 w-4 text-foreground/80" />
+                  )}
+                </div>
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
